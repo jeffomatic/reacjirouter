@@ -4,9 +4,11 @@ A modern replacement for [Reacji Channeler](https://reacji-channeler.builtbyslac
 
 ## Slack configuration
 
-- Bot user
-- Bot event subscriptions
-  - `reaction_added`
+Feature | Category | Scope required | Description
+--- | --- | ---
+`chat.postMessage` | API call | `chat:write` | posts links, interacts with user for config
+`team.info` | API call | `team:read` | exchange team ID for team domain, for building message links
+`reaction_added` | bot event subscription | reactions:read | provides info and trigger for link posts
 
 ## TODO
 
