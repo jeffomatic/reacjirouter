@@ -97,6 +97,7 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Printf("/slack/event: error handling reaction event: %s", err)
 			}
+
 		default:
 			log.Printf("/slack/event: received unknown event type %q", e.Event.T)
 		}
