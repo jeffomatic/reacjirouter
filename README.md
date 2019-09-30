@@ -32,5 +32,6 @@ A modern replacement for [Reacji Channeler](https://reacji-channeler.builtbyslac
         - `/reacjirouter` (help)
       - app home interface TBD
 - persist reacji events to job queue
+- OAuth
 - deal with visibility of reactions somehow
   - Block Kit channel picker which formats a copy/paste-able invitation string
