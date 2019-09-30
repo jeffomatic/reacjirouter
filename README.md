@@ -35,3 +35,6 @@ A modern replacement for [Reacji Channeler](https://reacji-channeler.builtbyslac
 - OAuth
 - deal with visibility of reactions somehow
   - Block Kit channel picker which formats a copy/paste-able invitation string
+- new features
+  - templatized posts, e.g. "{{User}} posted {{reaction}} in {{Channel}}: {{Link}}"
+  - allow multiple channels per emoji
