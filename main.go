@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -27,21 +28,41 @@ func init() {
 	emojiToChannel["grin"] = "#general"
 }
 
-func handleReacji(reacji string, srcChannel string, timestamp string) error {
+func buildMessageLink(teamID string, channelID string, timestamp string) (string, error) {
+	var resp slack.TeamInfoResponse
+
+	// TODO: cache this
+	err := slack.NewClient(slackAPIToken).Call("team.info", nil, &resp)
+	if err != nil {
+		return "", errors.Wrap(err, "team domain fetch")
+	}
+
+	// Format:
+	// https://{domain}.slack.com/archives/{channel ID}/p{timestamp with period stripped}
+	return fmt.Sprintf(
+		"https://%s.slack.com/archives/%s/p%s",
+		resp.Team.Domain,
+		channelID,
+		strings.Replace(timestamp, ".", "", 1),
+	), nil
+}
+
+func handleReacji(reacji string, teamID string, channelID string, timestamp string) error {
 	channel, ok := emojiToChannel[reacji]
 	if !ok {
 		return nil
 	}
 
-	err := slack.NewClient(slackAPIToken).Call("chat.postMessage", struct {
-		Channel string `json:"channel"`
-		Text    string `json:"text"`
-		AsUser  bool   `json:"as_user"`
-	}{
-		channel,
-		fmt.Sprintf("reacji: %s channel: %s ts: %s", reacji, srcChannel, timestamp), // TODO
-		true,
-	})
+	message, err := buildMessageLink(teamID, channelID, timestamp)
+	if err != nil {
+		return errors.Wrap(err, "building message link")
+	}
+
+	err = slack.NewClient(slackAPIToken).Call(
+		"chat.postMessage",
+		slack.ChatPostMessageRequest{channel, message, true},
+		nil,
+	)
 	if err != nil {
 		return errors.Wrap(err, "chat.postMessage error")
 	}
@@ -72,7 +93,7 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	case "event_callback":
 		switch e.Event.T {
 		case "reaction_added":
-			err = handleReacji(e.Event.Reaction, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
+			err = handleReacji(e.Event.Reaction, e.TeamID, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
 			if err != nil {
 				log.Printf("/slack/event: error handling reacji: %s", err)
 			}

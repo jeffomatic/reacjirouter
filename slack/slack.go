@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -39,10 +40,29 @@ type EventPayload struct {
 	Challenge string // for URL verification
 }
 
-func (c *Client) Call(method string, body interface{}) error {
-	reqBody, err := json.Marshal(body)
-	if err != nil {
-		return errors.Wrap(err, "error encoding JSON")
+type TeamInfoResponse struct {
+	Team struct {
+		ID     string `json:"id"`
+		Name   string `json:"name"`
+		Domain string `json:"domain"`
+	} `json:"team"`
+}
+
+type ChatPostMessageRequest struct {
+	Channel string `json:"channel"`
+	Text    string `json:"text"`
+	AsUser  bool   `json:"as_user"`
+}
+
+func (c *Client) Call(method string, body interface{}, respBody interface{}) error {
+	reqBody := []byte(`{}`)
+	var err error
+
+	if body != nil {
+		reqBody, err = json.Marshal(body)
+		if err != nil {
+			return errors.Wrap(err, "error encoding JSON")
+		}
 	}
 
 	req, err := http.NewRequest(
@@ -65,17 +85,28 @@ func (c *Client) Call(method string, body interface{}) error {
 		return fmt.Errorf("bad status: %s", resp.Status)
 	}
 
-	respBody := struct {
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "reading HTTP response body")
+	}
+
+	errCheck := struct {
 		Ok    bool
 		Error string
 	}{}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	err = json.Unmarshal(respBytes, &errCheck)
 	if err != nil {
-		return errors.Wrap(err, "response body decode error")
+		return errors.Wrap(err, "response body error check decode")
+	}
+	if !errCheck.Ok {
+		return fmt.Errorf("Slack API error: %s", errCheck.Error)
 	}
 
-	if !respBody.Ok {
-		return fmt.Errorf("Slack API error: %s", respBody.Error)
+	if respBody != nil {
+		err = json.Unmarshal(respBytes, respBody)
+		if err != nil {
+			return errors.Wrap(err, "response body unmarshal")
+		}
 	}
 
 	return nil
