@@ -12,11 +12,20 @@ import (
 )
 
 type slackEvent struct {
-	T string `json:"type"`
+	T        string `json:"type"`
+	UserID   string `json:"user"`
+	Reaction string
+	Item     struct {
+		T         string `json:"type"`
+		ChannelID string `json:"channel"`
+		Timestamp string `json:"ts"`
+	}
+}
 
-	// for URL verification
-	Token     string
-	Challenge string
+type slackEventPayload struct {
+	T         string `json:"type"`
+	Event     slackEvent
+	Challenge string // for URL verification
 }
 
 func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
@@ -28,10 +37,10 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var e slackEvent
+	var e slackEventPayload
 	err := decoder.Decode(&e)
 	if err != nil {
-		log.Println("error decoding JSON:", err)
+		log.Println("/slack/event: error decoding JSON:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -40,8 +49,22 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	case "url_verification":
 		fmt.Fprintf(w, e.Challenge)
 
+	case "event_callback":
+		switch e.Event.T {
+		case "reaction_added":
+			log.Printf(
+				"TODO: reaction %q user %q channel %q timestamp %q",
+				e.Event.Reaction,
+				e.Event.UserID,
+				e.Event.Item.ChannelID,
+				e.Event.Item.Timestamp,
+			)
+		default:
+			log.Printf("/slack/event: received unknown event type %q", e.Event.T)
+		}
+
 	default:
-		// do nothing
+		log.Printf("/slack/event: received unknown payload type %q", e.T)
 	}
 }
 
