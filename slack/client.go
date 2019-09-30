@@ -46,7 +46,7 @@ func (c *Client) Call(method string, body interface{}, respBody interface{}) err
 
 	resp, err := new(http.Client).Do(req)
 	if err != nil {
-		return errors.Wrap(err, "transport error")
+		return errors.Wrap(err, "executing HTTP request")
 	}
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad status: %s", resp.Status)
