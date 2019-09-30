@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/jeffomatic/reacjirouter/slack"
 	"github.com/pkg/errors"
 )
 
@@ -27,74 +27,13 @@ func init() {
 	emojiToChannel["grin"] = "#general"
 }
 
-type slackEvent struct {
-	ID       string `json:"event_id"`
-	T        string `json:"type"`
-	UserID   string `json:"user"`
-	Reaction string
-	Item     struct {
-		T         string `json:"type"`
-		ChannelID string `json:"channel"`
-		Timestamp string `json:"ts"`
-	}
-}
-
-type slackEventPayload struct {
-	T         string `json:"type"`
-	TeamID    string `json:"team_id"`
-	Event     slackEvent
-	Challenge string // for URL verification
-}
-
-func slackAPICall(method string, body interface{}) error {
-	reqBody, err := json.Marshal(body)
-	if err != nil {
-		return errors.Wrap(err, "error encoding JSON")
-	}
-
-	req, err := http.NewRequest(
-		http.MethodPost,
-		slackAPIURLPrefix+method,
-		bytes.NewReader(reqBody),
-	)
-	if err != nil {
-		return errors.Wrap(err, "error preparing request")
-	}
-
-	req.Header["Content-Type"] = []string{"application/json"}
-	req.Header["Authorization"] = []string{"Bearer " + slackAPIToken}
-
-	resp, err := new(http.Client).Do(req)
-	if err != nil {
-		return errors.Wrap(err, "transport error")
-	}
-	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	respBody := struct {
-		Ok    bool
-		Error string
-	}{}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
-	if err != nil {
-		return errors.Wrap(err, "response body decode error")
-	}
-
-	if !respBody.Ok {
-		return fmt.Errorf("Slack API error: %s", respBody.Error)
-	}
-
-	return nil
-}
-
 func handleReacji(reacji string, srcChannel string, timestamp string) error {
 	channel, ok := emojiToChannel[reacji]
 	if !ok {
 		return nil
 	}
 
-	err := slackAPICall("chat.postMessage", struct {
+	err := slack.NewClient(slackAPIToken).Call("chat.postMessage", struct {
 		Channel string `json:"channel"`
 		Text    string `json:"text"`
 		AsUser  bool   `json:"as_user"`
@@ -118,7 +57,7 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var e slackEventPayload
+	var e slack.EventPayload
 	err := json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
 		log.Println("/slack/event: error decoding JSON:", err)
