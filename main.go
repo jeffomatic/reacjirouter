@@ -47,8 +47,8 @@ func buildMessageLink(teamID string, channelID string, timestamp string) (string
 	), nil
 }
 
-func handleReacji(reacji string, teamID string, channelID string, timestamp string) error {
-	channel, ok := emojiToChannel[reacji]
+func handleReactionAdded(emoji string, teamID string, channelID string, timestamp string) error {
+	channel, ok := emojiToChannel[emoji]
 	if !ok {
 		return nil
 	}
@@ -93,9 +93,9 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	case "event_callback":
 		switch e.Event.T {
 		case "reaction_added":
-			err = handleReacji(e.Event.Reaction, e.TeamID, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
+			err = handleReactionAdded(e.Event.Reaction, e.TeamID, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
 			if err != nil {
-				log.Printf("/slack/event: error handling reacji: %s", err)
+				log.Printf("/slack/event: error handling reaction event: %s", err)
 			}
 		default:
 			log.Printf("/slack/event: received unknown event type %q", e.Event.T)
