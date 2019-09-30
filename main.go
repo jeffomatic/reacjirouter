@@ -64,7 +64,7 @@ func handleReactionAdded(emoji string, teamID string, channelID string, timestam
 		nil,
 	)
 	if err != nil {
-		return errors.Wrap(err, "chat.postMessage error")
+		return errors.Wrap(err, "chat.postMessage for link post")
 	}
 
 	return nil

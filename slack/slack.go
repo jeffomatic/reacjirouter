@@ -61,7 +61,7 @@ func (c *Client) Call(method string, body interface{}, respBody interface{}) err
 	if body != nil {
 		reqBody, err = json.Marshal(body)
 		if err != nil {
-			return errors.Wrap(err, "error encoding JSON")
+			return errors.Wrap(err, "json encode request body")
 		}
 	}
 
@@ -71,7 +71,7 @@ func (c *Client) Call(method string, body interface{}, respBody interface{}) err
 		bytes.NewReader(reqBody),
 	)
 	if err != nil {
-		return errors.Wrap(err, "error preparing request")
+		return errors.Wrap(err, "HTTP request creation")
 	}
 
 	req.Header["Content-Type"] = []string{"application/json"}
@@ -96,7 +96,7 @@ func (c *Client) Call(method string, body interface{}, respBody interface{}) err
 	}{}
 	err = json.Unmarshal(respBytes, &errCheck)
 	if err != nil {
-		return errors.Wrap(err, "response body error check decode")
+		return errors.Wrap(err, "response body error-check decode")
 	}
 	if !errCheck.Ok {
 		return fmt.Errorf("Slack API error: %s", errCheck.Error)
