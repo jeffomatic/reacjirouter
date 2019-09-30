@@ -46,13 +46,55 @@ type slackEventPayload struct {
 	Challenge string // for URL verification
 }
 
+func slackAPICall(method string, body interface{}) error {
+	reqBody, err := json.Marshal(body)
+	if err != nil {
+		return errors.Wrap(err, "error encoding JSON")
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		slackAPIURLPrefix+method,
+		bytes.NewReader(reqBody),
+	)
+	if err != nil {
+		return errors.Wrap(err, "error preparing request")
+	}
+
+	req.Header["Content-Type"] = []string{"application/json"}
+	req.Header["Authorization"] = []string{"Bearer " + slackAPIToken}
+
+	resp, err := new(http.Client).Do(req)
+	if err != nil {
+		return errors.Wrap(err, "transport error")
+	}
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	respBody := struct {
+		Ok    bool
+		Error string
+	}{}
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	if err != nil {
+		return errors.Wrap(err, "response body decode error")
+	}
+
+	if !respBody.Ok {
+		return fmt.Errorf("Slack API error: %s", respBody.Error)
+	}
+
+	return nil
+}
+
 func handleReacji(reacji string, srcChannel string, timestamp string) error {
 	channel, ok := emojiToChannel[reacji]
 	if !ok {
 		return nil
 	}
 
-	reqBody, err := json.Marshal(struct {
+	err := slackAPICall("chat.postMessage", struct {
 		Channel string `json:"channel"`
 		Text    string `json:"text"`
 		AsUser  bool   `json:"as_user"`
@@ -62,37 +104,7 @@ func handleReacji(reacji string, srcChannel string, timestamp string) error {
 		true,
 	})
 	if err != nil {
-		panic("error encoding JSON: " + err.Error()) // should never happen
-	}
-
-	req, err := http.NewRequest(http.MethodPost, slackAPIURLPrefix+"chat.postMessage", bytes.NewReader(reqBody))
-	if err != nil {
-		panic("error building request: " + err.Error()) // should never happen
-	}
-
-	req.Header["Content-Type"] = []string{"application/json"}
-	req.Header["Authorization"] = []string{"Bearer " + slackAPIToken}
-
-	c := new(http.Client)
-	resp, err := c.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "chat.postMessage transport error")
-	}
-	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("chat.postMessage bad status: %s", resp.Status)
-	}
-
-	respBody := struct {
-		Ok    bool
-		Error string
-	}{}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
-	if err != nil {
-		return errors.Wrap(err, "chat.postMessage response body decode error")
-	}
-
-	if !respBody.Ok {
-		return fmt.Errorf("chat.postMessage error: %s", respBody.Error)
+		return errors.Wrap(err, "chat.postMessage error")
 	}
 
 	return nil
