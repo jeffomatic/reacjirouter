@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,9 +10,25 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 )
 
+const (
+	slackAPIURLPrefix = "https://slack.com/api/"
+	slackAPIToken     = "changeme"
+)
+
+var emojiToChannel map[string]string
+
+func init() {
+	emojiToChannel = make(map[string]string)
+
+	// TEMP: hardcode some mappings
+	emojiToChannel["grin"] = "#general"
+}
+
 type slackEvent struct {
+	ID       string `json:"event_id"`
 	T        string `json:"type"`
 	UserID   string `json:"user"`
 	Reaction string
@@ -24,8 +41,61 @@ type slackEvent struct {
 
 type slackEventPayload struct {
 	T         string `json:"type"`
+	TeamID    string `json:"team_id"`
 	Event     slackEvent
 	Challenge string // for URL verification
+}
+
+func handleReacji(reacji string, srcChannel string, timestamp string) error {
+	channel, ok := emojiToChannel[reacji]
+	if !ok {
+		return nil
+	}
+
+	reqBody, err := json.Marshal(struct {
+		Channel string `json:"channel"`
+		Text    string `json:"text"`
+		AsUser  bool   `json:"as_user"`
+	}{
+		channel,
+		fmt.Sprintf("reacji: %s channel: %s ts: %s", reacji, srcChannel, timestamp), // TODO
+		true,
+	})
+	if err != nil {
+		panic("error encoding JSON: " + err.Error()) // should never happen
+	}
+
+	req, err := http.NewRequest(http.MethodPost, slackAPIURLPrefix+"chat.postMessage", bytes.NewReader(reqBody))
+	if err != nil {
+		panic("error building request: " + err.Error()) // should never happen
+	}
+
+	req.Header["Content-Type"] = []string{"application/json"}
+	req.Header["Authorization"] = []string{"Bearer " + slackAPIToken}
+
+	c := new(http.Client)
+	resp, err := c.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "chat.postMessage transport error")
+	}
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("chat.postMessage bad status: %s", resp.Status)
+	}
+
+	respBody := struct {
+		Ok    bool
+		Error string
+	}{}
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	if err != nil {
+		return errors.Wrap(err, "chat.postMessage response body decode error")
+	}
+
+	if !respBody.Ok {
+		return fmt.Errorf("chat.postMessage error: %s", respBody.Error)
+	}
+
+	return nil
 }
 
 func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
@@ -36,9 +106,8 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := json.NewDecoder(r.Body)
 	var e slackEventPayload
-	err := decoder.Decode(&e)
+	err := json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
 		log.Println("/slack/event: error decoding JSON:", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -52,13 +121,10 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	case "event_callback":
 		switch e.Event.T {
 		case "reaction_added":
-			log.Printf(
-				"TODO: reaction %q user %q channel %q timestamp %q",
-				e.Event.Reaction,
-				e.Event.UserID,
-				e.Event.Item.ChannelID,
-				e.Event.Item.Timestamp,
-			)
+			err = handleReacji(e.Event.Reaction, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
+			if err != nil {
+				log.Printf("/slack/event: error handling reacji: %s", err)
+			}
 		default:
 			log.Printf("/slack/event: received unknown event type %q", e.Event.T)
 		}
