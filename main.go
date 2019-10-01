@@ -30,17 +30,6 @@ func init() {
 	spaceSplitter = regexp.MustCompile(`\s+`)
 }
 
-func buildMessageLink(teamURL string, channelID string, timestamp string) (string, error) {
-	// Format:
-	// https://{domain}.slack.com/archives/{channel ID}/p{timestamp with period stripped}
-	return fmt.Sprintf(
-		"%sarchives/%s/p%s",
-		teamURL,
-		channelID,
-		strings.Replace(timestamp, ".", "", 1),
-	), nil
-}
-
 func sendMessage(channelID, text string) error {
 	return slack.NewClient(slackAPIToken).Call(
 		"chat.postMessage",
@@ -85,12 +74,8 @@ func handleReactionAdded(teamID string, emoji string, channelID string, timestam
 		return nil
 	}
 
-	message, err := buildMessageLink(teamURL, channelID, timestamp)
-	if err != nil {
-		return err
-	}
-
-	err = sendMessage(targetChannel, message)
+	text := slack.MessageLink{teamURL, channelID, timestamp}.String()
+	err := sendMessage(targetChannel, text)
 	if err != nil {
 		return err
 	}
