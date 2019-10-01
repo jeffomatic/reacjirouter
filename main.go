@@ -52,6 +52,49 @@ func handleIM(teamID, channelID, userID, text string) error {
 	var err error
 
 	switch strings.ToLower(tokens[0]) {
+	case "add":
+		if len(tokens) != 3 {
+			err = sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+			if err != nil {
+				return err
+			}
+
+			return nil // this is a user error
+		}
+
+		emoji, ok := slack.ExtractEmoji(tokens[1])
+		if !ok {
+			log.Println("emoji error", tokens[1])
+			err = sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+			if err != nil {
+				return err
+			}
+
+			return nil // this is a user error
+		}
+
+		targetChannelID, ok := slack.ExtractChannelID(tokens[2])
+		if !ok {
+			log.Println("channel error", tokens[2])
+			err = sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+			if err != nil {
+				return err
+			}
+
+			return nil // this is a user error
+		}
+
+		// TODO: handle the following error conditions
+		// - bot not in channel
+
+		store.Add(teamID, emoji, targetChannelID)
+
+		text := fmt.Sprintf("Okay, I'll send all messages with the :%s: reacji to <#%s>.", emoji, targetChannelID)
+		err = sendMessage(channelID, text)
+		if err != nil {
+			return err
+		}
+
 	case "help":
 		err = sendEphemeralMessage(userID, channelID, `
 *Instructions*
