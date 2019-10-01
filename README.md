@@ -9,6 +9,7 @@ Feature | Category | Scope required | Description
 `chat.postMessage` | API call | `chat:write` | posts links, interacts with user for config
 `team.info` | API call | `team:read` | exchange team ID for team domain, for building message links
 `reaction_added` | bot event subscription | reactions:read | provides info and trigger for link posts
+`message.im` | bot event subscription | im:history | read config commands
 
 ## TODO
 
