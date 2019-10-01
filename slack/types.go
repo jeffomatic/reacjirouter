@@ -22,22 +22,14 @@ type EventPayload struct {
 	Challenge string // for URL verification
 }
 
-type TeamInfoResponse struct {
-	Team struct {
-		ID     string `json:"id"`
-		Name   string `json:"name"`
-		Domain string `json:"domain"`
-	} `json:"team"`
+type AuthTestResponse struct {
+	URL    string `json:"url"`
+	TeamID string `json:"team_id"`
+	UserID string `json:"user_id"`
 }
 
 type ChatPostMessageRequest struct {
 	Channel string `json:"channel"`
 	Text    string `json:"text"`
 	AsUser  bool   `json:"as_user"`
-}
-
-type AuthTestResponse struct {
-	URL    string `json:"url"`
-	TeamID string `json:"team_id"`
-	UserID string `json:"user_id"`
 }

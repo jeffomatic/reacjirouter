@@ -23,26 +23,19 @@ const (
 var (
 	spaceSplitter *regexp.Regexp
 	appUserID     string
+	teamURL       string
 )
 
 func init() {
 	spaceSplitter = regexp.MustCompile(`\s+`)
 }
 
-func buildMessageLink(teamID string, channelID string, timestamp string) (string, error) {
-	var resp slack.TeamInfoResponse
-
-	// TODO: cache this
-	err := slack.NewClient(slackAPIToken).Call("team.info", nil, &resp)
-	if err != nil {
-		return "", err
-	}
-
+func buildMessageLink(teamURL string, channelID string, timestamp string) (string, error) {
 	// Format:
 	// https://{domain}.slack.com/archives/{channel ID}/p{timestamp with period stripped}
 	return fmt.Sprintf(
-		"https://%s.slack.com/archives/%s/p%s",
-		resp.Team.Domain,
+		"%sarchives/%s/p%s",
+		teamURL,
 		channelID,
 		strings.Replace(timestamp, ".", "", 1),
 	), nil
@@ -92,7 +85,7 @@ func handleReactionAdded(teamID string, emoji string, channelID string, timestam
 		return nil
 	}
 
-	message, err := buildMessageLink(teamID, channelID, timestamp)
+	message, err := buildMessageLink(teamURL, channelID, timestamp)
 	if err != nil {
 		return err
 	}
@@ -159,23 +152,24 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getAppUserID() (string, error) {
+func setupTeamData() error {
 	var resp slack.AuthTestResponse
 	err := slack.NewClient(slackAPIToken).Call("auth.test", nil, &resp)
 	if err != nil {
-		return "", nil
+		return err
 	}
 
-	return resp.UserID, nil
+	appUserID = resp.UserID
+	teamURL = resp.URL
+
+	return nil
 }
 
 func main() {
-	var err error
-	appUserID, err = getAppUserID()
+	err := setupTeamData()
 	if err != nil {
 		log.Fatalln("could not fetch app user ID, error:", err)
 	}
-	log.Println("App user ID is", appUserID)
 
 	router := mux.NewRouter()
 	router.Path("/slack/event").Methods("POST").HandlerFunc(handleSlackEvent)
