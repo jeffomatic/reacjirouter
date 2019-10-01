@@ -13,7 +13,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jeffomatic/reacjirouter/slack"
 	"github.com/jeffomatic/reacjirouter/store"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -36,7 +35,7 @@ func buildMessageLink(teamID string, channelID string, timestamp string) (string
 	// TODO: cache this
 	err := slack.NewClient(slackAPIToken).Call("team.info", nil, &resp)
 	if err != nil {
-		return "", errors.Wrap(err, "team domain fetch")
+		return "", err
 	}
 
 	// Format:
@@ -95,12 +94,12 @@ func handleReactionAdded(teamID string, emoji string, channelID string, timestam
 
 	message, err := buildMessageLink(teamID, channelID, timestamp)
 	if err != nil {
-		return errors.Wrap(err, "building message link")
+		return err
 	}
 
 	err = sendMessage(targetChannel, message)
 	if err != nil {
-		return errors.Wrap(err, "sendMessage for link post")
+		return err
 	}
 
 	return nil
