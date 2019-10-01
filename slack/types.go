@@ -28,6 +28,13 @@ type AuthTestResponse struct {
 	UserID string `json:"user_id"`
 }
 
+type ChatPostEphemeralRequest struct {
+	User    string `json:"user"`
+	Channel string `json:"channel"`
+	Text    string `json:"text"`
+	AsUser  bool   `json:"as_user"`
+}
+
 type ChatPostMessageRequest struct {
 	Channel string `json:"channel"`
 	Text    string `json:"text"`

@@ -38,14 +38,22 @@ func sendMessage(channelID, text string) error {
 	)
 }
 
-func handleIM(teamID, channelID, text string) error {
+func sendEphemeralMessage(userID, channelID, text string) error {
+	return slack.NewClient(slackAPIToken).Call(
+		"chat.postEphemeral",
+		slack.ChatPostEphemeralRequest{userID, channelID, text, true},
+		nil,
+	)
+}
+
+func handleIM(teamID, channelID, userID, text string) error {
 	text = strings.TrimSpace(text)
 	tokens := spaceSplitter.Split(text, 3)
 	var err error
 
 	switch strings.ToLower(tokens[0]) {
 	case "help":
-		err = sendMessage(channelID, `
+		err = sendEphemeralMessage(userID, channelID, `
 *Instructions*
 
 Add a new reaction route
@@ -59,7 +67,7 @@ Show help
 		}
 
 	default:
-		err = sendMessage(channelID, "Sorry, I didn't recognize that command! Type \"help\" for instructions.")
+		err = sendEphemeralMessage(userID, channelID, "Sorry, I didn't recognize that command! Type \"help\" for instructions.")
 		if err != nil {
 			return err
 		}
@@ -113,7 +121,7 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 
-				err = handleIM(e.TeamID, e.Event.ChannelID, e.Event.Text)
+				err = handleIM(e.TeamID, e.Event.ChannelID, e.Event.UserID, e.Event.Text)
 				if err != nil {
 					log.Printf("/slack/event: error handling IM event: %s", err)
 				}
