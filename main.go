@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jeffomatic/reacjirouter/slack"
+	"github.com/jeffomatic/reacjirouter/store"
 	"github.com/pkg/errors"
 )
 
@@ -18,15 +19,6 @@ const (
 	slackAPIURLPrefix = "https://slack.com/api/"
 	slackAPIToken     = "changeme"
 )
-
-var emojiToChannel map[string]string
-
-func init() {
-	emojiToChannel = make(map[string]string)
-
-	// TEMP: hardcode some mappings
-	emojiToChannel["grin"] = "#general"
-}
 
 func buildMessageLink(teamID string, channelID string, timestamp string) (string, error) {
 	var resp slack.TeamInfoResponse
@@ -47,8 +39,8 @@ func buildMessageLink(teamID string, channelID string, timestamp string) (string
 	), nil
 }
 
-func handleReactionAdded(emoji string, teamID string, channelID string, timestamp string) error {
-	channel, ok := emojiToChannel[emoji]
+func handleReactionAdded(teamID string, emoji string, channelID string, timestamp string) error {
+	channel, ok := store.Get(teamID, emoji)
 	if !ok {
 		return nil
 	}
@@ -93,7 +85,7 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	case "event_callback":
 		switch e.Event.T {
 		case "reaction_added":
-			err = handleReactionAdded(e.Event.Reaction, e.TeamID, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
+			err = handleReactionAdded(e.TeamID, e.Event.Reaction, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
 			if err != nil {
 				log.Printf("/slack/event: error handling reaction event: %s", err)
 			}
