@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	err := setupTeamData()
+	err := setup()
 	if err != nil {
 		log.Fatalln("could not fetch app user ID, error:", err)
 	}

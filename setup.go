@@ -1,19 +1,40 @@
 package main
 
-import "github.com/jeffomatic/reacjirouter/slack"
+import (
+	"encoding/json"
+	"os"
+
+	"github.com/jeffomatic/reacjirouter/slack"
+	"github.com/pkg/errors"
+)
 
 const (
-	slackAPIToken = "changeme"
+	configPath = "./config.json"
 )
 
 var (
-	appUserID string
-	teamURL   string
+	slackAPIToken string
+	appUserID     string
+	teamURL       string
 )
 
-func setupTeamData() error {
+func setup() error {
+	f, err := os.Open(configPath)
+	if err != nil {
+		return errors.Wrap(err, "open config file")
+	}
+
+	var config struct{ SlackAPIToken string }
+	err = json.NewDecoder(f).Decode(&config)
+	defer f.Close()
+	if err != nil {
+		return errors.Wrap(err, "decode config contents")
+	}
+
+	slackAPIToken = config.SlackAPIToken
+
 	var resp slack.AuthTestResponse
-	err := slack.NewClient(slackAPIToken).Call("auth.test", nil, &resp)
+	err = slack.NewClient(slackAPIToken).Call("auth.test", nil, &resp)
 	if err != nil {
 		return err
 	}

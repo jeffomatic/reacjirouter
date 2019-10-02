@@ -3,3 +3,6 @@ Makefile
 
 # build artifacts
 reacjirouter
+
+# configuration
+config.json
