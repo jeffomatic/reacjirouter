@@ -46,15 +46,9 @@ func sendEphemeralMessage(userID, channelID, text string) error {
 	)
 }
 
-func handleIM(teamID, channelID, userID, text string) error {
-	text = strings.TrimSpace(text)
-	tokens := spaceSplitter.Split(text, 3)
-	var err error
-
-	switch strings.ToLower(tokens[0]) {
-	case "add":
+func handleAddCommand(teamID, channelID, userID string, tokens []string) error {
 		if len(tokens) != 3 {
-			err = sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+		err := sendEphemeralMessage(userID, channelID, `Could not understand add command`)
 			if err != nil {
 				return err
 			}
@@ -64,8 +58,7 @@ func handleIM(teamID, channelID, userID, text string) error {
 
 		emoji, ok := slack.ExtractEmoji(tokens[1])
 		if !ok {
-			log.Println("emoji error", tokens[1])
-			err = sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+		err := sendEphemeralMessage(userID, channelID, `Could not understand add command`)
 			if err != nil {
 				return err
 			}
@@ -75,8 +68,7 @@ func handleIM(teamID, channelID, userID, text string) error {
 
 		targetChannelID, ok := slack.ExtractChannelID(tokens[2])
 		if !ok {
-			log.Println("channel error", tokens[2])
-			err = sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+		err := sendEphemeralMessage(userID, channelID, `Could not understand add command`)
 			if err != nil {
 				return err
 			}
@@ -90,13 +82,11 @@ func handleIM(teamID, channelID, userID, text string) error {
 		store.Add(teamID, emoji, targetChannelID)
 
 		text := fmt.Sprintf("Okay, I'll send all messages with the :%s: reacji to <#%s>.", emoji, targetChannelID)
-		err = sendMessage(channelID, text)
-		if err != nil {
-			return err
-		}
+	return sendMessage(channelID, text)
+}
 
-	case "help":
-		err = sendEphemeralMessage(userID, channelID, `
+func handleHelpCommand(channelID, userID string, tokens []string) error {
+	text := `
 *Instructions*
 
 Add a new reaction route
@@ -104,10 +94,21 @@ Add a new reaction route
 
 Show help
 > help
-`)
-		if err != nil {
-			return err
-		}
+`
+	return sendEphemeralMessage(userID, channelID, text)
+}
+
+func handleIM(teamID, channelID, userID, text string) error {
+	text = strings.TrimSpace(text)
+	tokens := spaceSplitter.Split(text, 3)
+	var err error
+
+	switch strings.ToLower(tokens[0]) {
+	case "add":
+		return handleAddCommand(teamID, channelID, userID, tokens)
+
+	case "help":
+		return handleHelpCommand(channelID, userID, tokens)
 
 	default:
 		err = sendEphemeralMessage(userID, channelID, "Sorry, I didn't recognize that command! Type \"help\" for instructions.")
