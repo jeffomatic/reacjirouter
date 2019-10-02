@@ -3,7 +3,11 @@
 // lost after the process terminates.
 package store
 
-import "sync"
+import (
+	"sort"
+	"strings"
+	"sync"
+)
 
 var (
 	teamEmojiChannelMutex sync.Mutex
@@ -32,7 +36,13 @@ type Pair struct {
 	ChannelID string
 }
 
-func List(teamID string) []Pair {
+type PairByEmoji []Pair
+
+func (a PairByEmoji) Len() int           { return len(a) }
+func (a PairByEmoji) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a PairByEmoji) Less(i, j int) bool { return strings.Compare(a[i].Emoji, a[j].Emoji) < 0 }
+
+func listUnsorted(teamID string) []Pair {
 	teamEmojiChannelMutex.Lock()
 	defer teamEmojiChannelMutex.Unlock()
 
@@ -47,6 +57,12 @@ func List(teamID string) []Pair {
 	}
 
 	return res
+}
+
+func List(teamID string) []Pair {
+	list := listUnsorted(teamID)
+	sort.Sort(PairByEmoji(list))
+	return list
 }
 
 func Get(teamID, emoji string) (string, bool) {

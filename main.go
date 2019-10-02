@@ -85,12 +85,36 @@ func handleAddCommand(teamID, channelID, userID string, tokens []string) error {
 	return sendMessage(channelID, text)
 }
 
+func handleListCommand(teamID, channelID, userID string, tokens []string) error {
+	if len(tokens) > 1 {
+		err := sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+		if err != nil {
+			return err
+		}
+	}
+
+	text := `No reacji configured.`
+	list := store.List(teamID)
+	if len(list) > 0 {
+		lines := make([]string, len(list))
+		for _, pair := range list {
+			lines = append(lines, fmt.Sprintf(":%s: :point_right: <#%s>", pair.Emoji, pair.ChannelID))
+		}
+		text = strings.Join(lines, "\n")
+	}
+
+	return sendMessage(channelID, text)
+}
+
 func handleHelpCommand(channelID, userID string, tokens []string) error {
 	text := `
 *Instructions*
 
 Add a new reaction route
 > add :emoji: #channel
+
+List reaction routes on this team
+> list
 
 Show help
 > help
@@ -106,6 +130,9 @@ func handleIM(teamID, channelID, userID, text string) error {
 	switch strings.ToLower(tokens[0]) {
 	case "add":
 		return handleAddCommand(teamID, channelID, userID, tokens)
+
+	case "list":
+		return handleListCommand(teamID, channelID, userID, tokens)
 
 	case "help":
 		return handleHelpCommand(channelID, userID, tokens)
