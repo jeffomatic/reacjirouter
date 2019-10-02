@@ -13,6 +13,7 @@ Feature | Category | Scope required | Description
 ## TODO
 
 - receive reacji events
+  - make sure to ignore reacji from private channels and/or DMs
 - post message links
   - needs emoji-channel map
     - v0: hard-coded
