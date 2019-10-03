@@ -31,18 +31,18 @@ func Add(teamID string, emoji string, channelID string) {
 	emojiChannel[emoji] = channelID
 }
 
-type Pair struct {
+type Route struct {
 	Emoji     string
 	ChannelID string
 }
 
-type PairByEmoji []Pair
+type RouteByEmoji []Route
 
-func (a PairByEmoji) Len() int           { return len(a) }
-func (a PairByEmoji) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a PairByEmoji) Less(i, j int) bool { return strings.Compare(a[i].Emoji, a[j].Emoji) < 0 }
+func (a RouteByEmoji) Len() int           { return len(a) }
+func (a RouteByEmoji) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a RouteByEmoji) Less(i, j int) bool { return strings.Compare(a[i].Emoji, a[j].Emoji) < 0 }
 
-func listUnsorted(teamID string) []Pair {
+func listUnsorted(teamID string) []Route {
 	teamEmojiChannelMutex.Lock()
 	defer teamEmojiChannelMutex.Unlock()
 
@@ -51,17 +51,17 @@ func listUnsorted(teamID string) []Pair {
 		return nil
 	}
 
-	var res []Pair
+	var res []Route
 	for emoji, channel := range emojiChannel {
-		res = append(res, Pair{emoji, channel})
+		res = append(res, Route{emoji, channel})
 	}
 
 	return res
 }
 
-func List(teamID string) []Pair {
+func List(teamID string) []Route {
 	list := listUnsorted(teamID)
-	sort.Sort(PairByEmoji(list))
+	sort.Sort(RouteByEmoji(list))
 	return list
 }
 
