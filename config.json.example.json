@@ -1,4 +1,5 @@
 {
+  "port": 1234,
   "slackClientID": "123.456",
   "slackClientSecret": "abc123",
   "slackSigningSecret": "cde456"

@@ -12,6 +12,7 @@ const (
 )
 
 type configStruct struct {
+	Port               int
 	SlackClientID      string
 	SlackClientSecret  string
 	SlackSigningSecret string

@@ -22,9 +22,8 @@ func main() {
 
 	handler := handlers.LoggingHandler(os.Stdout, router)
 
-	port := 1234
-	log.Println("Starting server on port", port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
+	log.Println("Starting server on port", config.Port)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", config.Port), handler)
 	if err != nil {
 		log.Fatal(err)
 	}
