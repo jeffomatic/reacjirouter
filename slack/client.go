@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 )
@@ -85,4 +86,15 @@ func (c *Client) Call(method string, body interface{}, respBody interface{}) err
 	return handleJSONResponse(resp, respBody)
 }
 
+func (c *Client) GetAccessToken(args AccessTokenArgs) (OauthAccessResponse, error) {
+	resp, err := new(http.Client).PostForm(c.URLPrefix+"/oauth.access", url.Values{
+		"authorization_type": []string{"grant"},
+		"client_id":          []string{args.ClientID},
+		"client_secret":      []string{args.ClientSecret},
+		"code":               []string{args.Code},
+	})
+
+	var respBody OauthAccessResponse
+	err = handleJSONResponse(resp, &respBody)
+	return respBody, err
 }

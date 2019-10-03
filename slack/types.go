@@ -40,3 +40,15 @@ type ChatPostMessageRequest struct {
 	Text    string `json:"text"`
 	AsUser  bool   `json:"as_user"`
 }
+
+type AccessTokenArgs struct {
+	ClientID     string
+	ClientSecret string
+	Code         string
+}
+
+type OauthAccessResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"type"`
+	TeamID      string `json:"team_id"`
+}
