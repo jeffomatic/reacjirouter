@@ -1,7 +1,7 @@
-// Package store provides an interface to a team-to-emoji-to-channel mapping.
-// It is currently implemented as an in-memory store, so the mapping will be
+// Package routes provides an interface to a team-to-emoji-to-channel mapping.
+// It is currently implemented as an in-memory routes, so the mapping will be
 // lost after the process terminates.
-package store
+package routes
 
 import (
 	"sort"

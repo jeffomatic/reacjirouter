@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jeffomatic/reacjirouter/routes"
 	"github.com/jeffomatic/reacjirouter/slack"
-	"github.com/jeffomatic/reacjirouter/store"
 )
 
 var (
@@ -46,7 +46,7 @@ func handleIM(c *teamClient, channelID, userID, text string) error {
 }
 
 func handleReactionAdded(c *teamClient, emoji string, channelID string, timestamp string) error {
-	targetChannel, ok := store.Get(c.teamID, emoji)
+	targetChannel, ok := routes.Get(c.teamID, emoji)
 	if !ok {
 		return nil
 	}
