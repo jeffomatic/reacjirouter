@@ -20,7 +20,7 @@ type configStruct struct {
 
 var config configStruct
 
-func setup() error {
+func loadConfig() error {
 	f, err := os.Open(configPath)
 	if err != nil {
 		return errors.Wrap(err, "open config file")
