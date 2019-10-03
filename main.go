@@ -13,7 +13,7 @@ import (
 func main() {
 	err := setup()
 	if err != nil {
-		log.Fatalln("could not fetch app user ID, error:", err)
+		log.Fatalln("could not load config, error:", err)
 	}
 
 	router := mux.NewRouter()
