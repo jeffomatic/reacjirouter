@@ -10,25 +10,25 @@ import (
 )
 
 var (
-	teamEmojiChannelMutex sync.Mutex
-	teamEmojiChannel      map[string]map[string]string
+	routesByTeamMutex sync.Mutex
+	routesByTeam      map[string]map[string]string
 )
 
 func init() {
-	teamEmojiChannel = make(map[string]map[string]string)
+	routesByTeam = make(map[string]map[string]string)
 }
 
 func Add(teamID string, emoji string, channelID string) {
-	teamEmojiChannelMutex.Lock()
-	defer teamEmojiChannelMutex.Unlock()
+	routesByTeamMutex.Lock()
+	defer routesByTeamMutex.Unlock()
 
-	emojiChannel, ok := teamEmojiChannel[teamID]
+	teamRoutes, ok := routesByTeam[teamID]
 	if !ok {
-		emojiChannel = make(map[string]string)
-		teamEmojiChannel[teamID] = emojiChannel
+		teamRoutes = make(map[string]string)
+		routesByTeam[teamID] = teamRoutes
 	}
 
-	emojiChannel[emoji] = channelID
+	teamRoutes[emoji] = channelID
 }
 
 type Route struct {
@@ -43,16 +43,16 @@ func (a RouteByEmoji) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a RouteByEmoji) Less(i, j int) bool { return strings.Compare(a[i].Emoji, a[j].Emoji) < 0 }
 
 func listUnsorted(teamID string) []Route {
-	teamEmojiChannelMutex.Lock()
-	defer teamEmojiChannelMutex.Unlock()
+	routesByTeamMutex.Lock()
+	defer routesByTeamMutex.Unlock()
 
-	emojiChannel, ok := teamEmojiChannel[teamID]
+	teamRoutes, ok := routesByTeam[teamID]
 	if !ok {
 		return nil
 	}
 
 	var res []Route
-	for emoji, channel := range emojiChannel {
+	for emoji, channel := range teamRoutes {
 		res = append(res, Route{emoji, channel})
 	}
 
@@ -66,14 +66,14 @@ func List(teamID string) []Route {
 }
 
 func Get(teamID, emoji string) (string, bool) {
-	teamEmojiChannelMutex.Lock()
-	defer teamEmojiChannelMutex.Unlock()
+	routesByTeamMutex.Lock()
+	defer routesByTeamMutex.Unlock()
 
-	emojiChannel, ok := teamEmojiChannel[teamID]
+	teamRoutes, ok := routesByTeam[teamID]
 	if !ok {
 		return "", false
 	}
 
-	channel, ok := emojiChannel[emoji]
+	channel, ok := teamRoutes[emoji]
 	return channel, ok
 }
