@@ -18,6 +18,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.Path("/slack/event").Methods("POST").HandlerFunc(handleSlackEvent)
+	router.Path("/slack/oauth").Methods("GET").HandlerFunc(handleSlackOauth)
 
 	handler := handlers.LoggingHandler(os.Stdout, router)
 
