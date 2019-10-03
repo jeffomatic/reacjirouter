@@ -5,10 +5,10 @@ A modern replacement for [Reacji Channeler](https://reacji-channeler.builtbyslac
 ## Slack configuration
 
 Feature | Category | Scope required | Description
---- | --- | ---
+--- | --- | --- | ---
 `chat.postMessage` | API call | `chat:write` | posts links, interacts with user for config
-`reaction_added` | bot event subscription | reactions:read | provides info and trigger for link posts
-`message.im` | bot event subscription | im:history | read config commands
+`reaction_added` | bot event subscription | `reactions:read` | provides info and trigger for link posts
+`message.im` | bot event subscription | `im:history` | read config commands
 
 ## TODO
 
