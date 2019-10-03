@@ -1,3 +1,5 @@
 {
-  "slackAPIToken": "xoxb-abc-123-456"
+  "slackClientID": "123.456",
+  "slackClientSecret": "abc123",
+  "slackSigningSecret": "cde456"
 }
