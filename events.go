@@ -20,23 +20,23 @@ func init() {
 	spaceSplitter = regexp.MustCompile(`\s+`)
 }
 
-func handleIM(teamID, channelID, userID, text string) error {
+func handleIM(c *teamClient, channelID, userID, text string) error {
 	text = strings.TrimSpace(text)
 	tokens := spaceSplitter.Split(text, 3)
 	var err error
 
 	switch strings.ToLower(tokens[0]) {
 	case "add":
-		return handleAddCommand(teamID, channelID, userID, tokens)
+		return handleAddCommand(c, channelID, userID, tokens)
 
 	case "list":
-		return handleListCommand(teamID, channelID, userID, tokens)
+		return handleListCommand(c, channelID, userID, tokens)
 
 	case "help":
-		return handleHelpCommand(channelID, userID, tokens)
+		return handleHelpCommand(c, channelID, userID, tokens)
 
 	default:
-		err = sendEphemeralMessage(userID, channelID, "Sorry, I didn't recognize that command! Type \"help\" for instructions.")
+		err = c.sendEphemeralMessage(userID, channelID, "Sorry, I didn't recognize that command! Type \"help\" for instructions.")
 		if err != nil {
 			return err
 		}
@@ -45,14 +45,19 @@ func handleIM(teamID, channelID, userID, text string) error {
 	return nil
 }
 
-func handleReactionAdded(teamID string, emoji string, channelID string, timestamp string) error {
-	targetChannel, ok := store.Get(teamID, emoji)
+func handleReactionAdded(c *teamClient, emoji string, channelID string, timestamp string) error {
+	targetChannel, ok := store.Get(c.teamID, emoji)
 	if !ok {
 		return nil
 	}
 
+	teamURL, err := c.teamURL()
+	if err != nil {
+		return err
+	}
+
 	text := slack.MessageLink{teamURL, channelID, timestamp}.String()
-	err := sendMessage(targetChannel, text)
+	err = c.sendMessage(targetChannel, text)
 	if err != nil {
 		return err
 	}
@@ -76,6 +81,17 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if e.T == "url_verification" {
+		fmt.Fprintf(w, e.Challenge)
+		return
+	}
+
+	// All other events require a valid token
+	c := newTeamClient(e.TeamID)
+	if c == nil {
+		return
+	}
+
 	switch e.T {
 	case "url_verification":
 		fmt.Fprintf(w, e.Challenge)
@@ -85,12 +101,18 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 		case "message":
 			switch e.Event.ChannelType {
 			case "im":
+				appUserID, err := c.userID()
+				if err != nil {
+					log.Println("error fetching user ID:", err)
+					break
+				}
+
 				// Don't respond to messages the app itself generates
 				if e.Event.UserID == appUserID {
 					break
 				}
 
-				err = handleIM(e.TeamID, e.Event.ChannelID, e.Event.UserID, e.Event.Text)
+				err = handleIM(c, e.Event.ChannelID, e.Event.UserID, e.Event.Text)
 				if err != nil {
 					log.Printf("/slack/event: error handling IM event: %s", err)
 				}
@@ -100,7 +122,7 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case "reaction_added":
-			err = handleReactionAdded(e.TeamID, e.Event.Reaction, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
+			err = handleReactionAdded(c, e.Event.Reaction, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
 			if err != nil {
 				log.Printf("/slack/event: error handling reaction event: %s", err)
 			}

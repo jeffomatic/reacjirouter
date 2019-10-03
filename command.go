@@ -8,9 +8,9 @@ import (
 	"github.com/jeffomatic/reacjirouter/store"
 )
 
-func handleAddCommand(teamID, channelID, userID string, tokens []string) error {
+func handleAddCommand(c *teamClient, channelID, userID string, tokens []string) error {
 	if len(tokens) != 3 {
-		err := sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+		err := c.sendEphemeralMessage(userID, channelID, `Could not understand add command`)
 		if err != nil {
 			return err
 		}
@@ -20,7 +20,7 @@ func handleAddCommand(teamID, channelID, userID string, tokens []string) error {
 
 	emoji, ok := slack.ExtractEmoji(tokens[1])
 	if !ok {
-		err := sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+		err := c.sendEphemeralMessage(userID, channelID, `Could not understand add command`)
 		if err != nil {
 			return err
 		}
@@ -30,7 +30,7 @@ func handleAddCommand(teamID, channelID, userID string, tokens []string) error {
 
 	targetChannelID, ok := slack.ExtractChannelID(tokens[2])
 	if !ok {
-		err := sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+		err := c.sendEphemeralMessage(userID, channelID, `Could not understand add command`)
 		if err != nil {
 			return err
 		}
@@ -41,22 +41,22 @@ func handleAddCommand(teamID, channelID, userID string, tokens []string) error {
 	// TODO: handle the following error conditions
 	// - bot not in channel
 
-	store.Add(teamID, emoji, targetChannelID)
+	store.Add(c.teamID, emoji, targetChannelID)
 
 	text := fmt.Sprintf("Okay, I'll send all messages with the :%s: reacji to <#%s>.", emoji, targetChannelID)
-	return sendMessage(channelID, text)
+	return c.sendMessage(channelID, text)
 }
 
-func handleListCommand(teamID, channelID, userID string, tokens []string) error {
+func handleListCommand(c *teamClient, channelID, userID string, tokens []string) error {
 	if len(tokens) > 1 {
-		err := sendEphemeralMessage(userID, channelID, `Could not understand add command`)
+		err := c.sendEphemeralMessage(userID, channelID, `Could not understand add command`)
 		if err != nil {
 			return err
 		}
 	}
 
 	text := `No reacji configured.`
-	list := store.List(teamID)
+	list := store.List(c.teamID)
 	if len(list) > 0 {
 		lines := make([]string, len(list))
 		for _, pair := range list {
@@ -65,10 +65,10 @@ func handleListCommand(teamID, channelID, userID string, tokens []string) error 
 		text = strings.Join(lines, "\n")
 	}
 
-	return sendMessage(channelID, text)
+	return c.sendMessage(channelID, text)
 }
 
-func handleHelpCommand(channelID, userID string, tokens []string) error {
+func handleHelpCommand(c *teamClient, channelID, userID string, tokens []string) error {
 	text := `
 *Instructions*
 
@@ -81,5 +81,5 @@ List reaction routes on this team
 Show help
 > help
 `
-	return sendEphemeralMessage(userID, channelID, text)
+	return c.sendEphemeralMessage(userID, channelID, text)
 }
