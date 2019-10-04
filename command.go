@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jeffomatic/reacjirouter/routes"
+	"github.com/jeffomatic/reacjirouter/routestore"
 	"github.com/jeffomatic/reacjirouter/slack"
 )
 
@@ -41,7 +41,7 @@ func handleAddCommand(c *teamClient, channelID, userID string, tokens []string) 
 	// TODO: handle the following error conditions
 	// - bot not in channel
 
-	routes.Add(c.teamID, emoji, targetChannelID)
+	routestore.Add(c.teamID, emoji, targetChannelID)
 
 	text := fmt.Sprintf("Okay, I'll send all messages with the :%s: reacji to <#%s>.", emoji, targetChannelID)
 	return c.sendMessage(channelID, text)
@@ -56,7 +56,7 @@ func handleListCommand(c *teamClient, channelID, userID string, tokens []string)
 	}
 
 	text := `No reacji configured.`
-	list := routes.List(c.teamID)
+	list := routestore.List(c.teamID)
 	if len(list) > 0 {
 		lines := make([]string, len(list))
 		for _, pair := range list {

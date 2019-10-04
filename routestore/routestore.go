@@ -1,7 +1,7 @@
-// Package routes provides an interface to a team-to-emoji-to-channel mapping.
+// Package routestore provides an interface to a team-to-emoji-to-channel mapping.
 // It is currently implemented as an in-memory routes, so the mapping will be
 // lost after the process terminates.
-package routes
+package routestore
 
 import (
 	"sort"
