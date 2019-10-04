@@ -73,30 +73,24 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// All other events require a valid token
+	if e.T != "event_callback" {
+		log.Printf("/slack/event: received unknown payload type %q", e.T)
+		return
+	}
+
+	if e.Event.T != "reaction_added" {
+		log.Printf("/slack/event: received unknown event type %q", e.Event.T)
+		return
+	}
+
 	c := newTeamClient(e.TeamID)
 	if c == nil {
 		return
 	}
 
-	switch e.T {
-	case "url_verification":
-		fmt.Fprintf(w, e.Challenge)
-
-	case "event_callback":
-		switch e.Event.T {
-		case "reaction_added":
-			err = handleReactionAdded(c, e.Event.Reaction, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
-			if err != nil {
-				log.Printf("/slack/event: error handling reaction event: %s", err)
-			}
-
-		default:
-			log.Printf("/slack/event: received unknown event type %q", e.Event.T)
-		}
-
-	default:
-		log.Printf("/slack/event: received unknown payload type %q", e.T)
+	err = handleReactionAdded(c, e.Event.Reaction, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
+	if err != nil {
+		log.Printf("/slack/event: error handling reaction event: %s", err)
 	}
 }
 
