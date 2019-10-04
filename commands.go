@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -49,8 +50,21 @@ func processAddCommand(teamID string, tokens []string) string {
 		return `Could not understand add command`
 	}
 
-	// TODO: handle the following error conditions
-	// - bot not in channel
+	c := newTeamClient(teamID)
+	var resp slack.ConversationsInfoResponse
+	err := c.Client.Call("conversations.info", slack.ConversationsInfoRequest{ChannelID: targetChannelID}, &resp)
+	if err != nil {
+		if apiErr := slack.GetAPIError(err); apiErr != nil {
+			if apiErr.Error() == "channel_not_found" {
+				return fmt.Sprintf("We couldn't find that channel. Try inviting Reacji Router to <#%s>", targetChannelID)
+			}
+
+			return fmt.Sprintf("We got an error from Slack trying to look up that channel: %s", apiErr.Error())
+		}
+
+		log.Println("unknown conversations.info error:", err)
+		return fmt.Sprintf("We got an error trying to look up that channel.")
+	}
 
 	routestore.Add(teamID, emoji, targetChannelID)
 

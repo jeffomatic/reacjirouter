@@ -46,6 +46,18 @@ type ChatPostMessageRequest struct {
 	AsUser  bool   `json:"as_user"`
 }
 
+type ConversationsInfoRequest struct {
+	ChannelID string `json:"channel"`
+}
+
+type ConversationsInfoResponse struct {
+	Channel struct {
+		ID       string `json:"id"`
+		Name     string `json:"name"`
+		IsMember bool   `json:"is_member"`
+	} `json:"channel"`
+}
+
 type AccessTokenArgs struct {
 	ClientID     string
 	ClientSecret string

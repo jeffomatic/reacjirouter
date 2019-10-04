@@ -6,9 +6,12 @@ A modern replacement for [Reacji Channeler](https://reacji-channeler.builtbyslac
 
 Feature | Category | Scope required | Description
 --- | --- | --- | ---
+`auth.test` | API call | - | get team URL and user ID
 `chat.postMessage` | API call | `chat:write` | posts links, interacts with user for config
+`conversations.info` | API call | `channels:read`, `groups:read`, etc. | check bot's membership
 `reaction_added` | bot event subscription | `reactions:read` | provides info and trigger for link posts
-`message.im` | bot event subscription | `im:history` | read config commands
+
+
 
 ## TODO
 
