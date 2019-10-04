@@ -11,36 +11,14 @@ Feature | Category | Scope required | Description
 `conversations.info` | API call | `channels:read`, `groups:read`, etc. | check bot's membership
 `reaction_added` | bot event subscription | `reactions:read` | provides info and trigger for link posts
 
-
-
 ## TODO
 
-- receive reacji events
-  - make sure to ignore reacji from private channels and/or DMs
-- post message links
-  - needs emoji-channel map
-    - v0: hard-coded
-    - v1: user-configurable
-      - v0: in memory
-      - v1: persistent
-    - interface
-      - bot DM
-        - `help`
-        - `list`
-        - `:emoji: #channel`
-        - `add`
-      - slash command (do we really want this?)
-        - `/reacjirouter list`
-          - pagination
-        - `/reacjirouter :emoji: #channel`
-          - invite self to public channels
-          - warning if channel isn't joinable
-        - `/reacjirouter` (help)
-      - app home interface TBD
-- persist reacji events to job queue
-- OAuth
-- deal with visibility of reactions somehow
-  - Block Kit channel picker which formats a copy/paste-able invitation string
+- add actual persistence
+  - tokens
+  - routes
+- defer reaction handling to JQ
+- make sure to ignore reacji from private channels and/or DMs
+  - or maybe this is safe?
 - new features
   - templatized posts, e.g. "{{User}} posted {{reaction}} in {{Channel}}: {{Link}}"
   - allow multiple channels per emoji
