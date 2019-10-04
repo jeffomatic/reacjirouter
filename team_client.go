@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/jeffomatic/reacjirouter/slack"
-	"github.com/jeffomatic/reacjirouter/tokens"
+	"github.com/jeffomatic/reacjirouter/tokenstore"
 )
 
 type teamClient struct {
@@ -14,7 +14,7 @@ type teamClient struct {
 }
 
 func newTeamClient(teamID string) *teamClient {
-	token, ok := tokens.Get(teamID)
+	token, ok := tokenstore.Get(teamID)
 	if !ok {
 		return nil
 	}

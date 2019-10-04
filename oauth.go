@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/jeffomatic/reacjirouter/slack"
-	"github.com/jeffomatic/reacjirouter/tokens"
+	"github.com/jeffomatic/reacjirouter/tokenstore"
 )
 
 // TODO: validate state param
@@ -38,7 +38,7 @@ func handleSlackOauth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens.Add(resp.TeamID, resp.AccessToken)
+	tokenstore.Add(resp.TeamID, resp.AccessToken)
 
 	log.Println("received access token for team", resp.TeamID, resp.AccessToken)
 	w.Write([]byte("Access token received for team " + resp.TeamID))
