@@ -54,6 +54,6 @@ type AccessTokenArgs struct {
 
 type OauthAccessResponse struct {
 	AccessToken string `json:"access_token"`
-	TokenType   string `json:"type"`
+	Scope       string `json:"scope"`
 	TeamID      string `json:"team_id"`
 }
