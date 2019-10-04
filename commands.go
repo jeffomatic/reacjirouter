@@ -35,6 +35,28 @@ func processCommand(teamID, text string) string {
 	}
 }
 
+func processNonMember(c *teamClient, targetChannelID string) string {
+	userID, err := c.userID()
+	if err != nil {
+		log.Println("error looking up ID:", err)
+		return fmt.Sprintf("We got an error trying to look up that channel.")
+	}
+
+	return fmt.Sprintf(`
+*Oops!* Reacji Router isn't a member of <#%s>. Try inviting the app:
+
+%s
+/invite <@%s> <#%s>
+%s
+`,
+		targetChannelID,
+		"```",
+		userID,
+		targetChannelID,
+		"```",
+	)
+}
+
 func processAddCommand(teamID string, tokens []string) string {
 	if len(tokens) != 3 {
 		return `Could not understand add command`
@@ -51,29 +73,12 @@ func processAddCommand(teamID string, tokens []string) string {
 	}
 
 	c := newTeamClient(teamID)
-	err := c.Call(slack.ConversationsInfo, slack.ConversationsInfoRequest{ChannelID: targetChannelID}, nil)
+	var resp slack.ConversationsInfoResponse
+	err := c.Call(slack.ConversationsInfo, slack.ConversationsInfoRequest{ChannelID: targetChannelID}, &resp)
 	if err != nil {
 		if apiErr := slack.GetAPIError(err); apiErr != nil {
 			if apiErr.Error() == "channel_not_found" {
-				userID, err := c.userID()
-				if err != nil {
-					log.Println("error looking up ID:", err)
-					return fmt.Sprintf("We got an error trying to look up that channel.")
-				}
-
-				return fmt.Sprintf(`
-We couldn't find that channel. Try inviting Reacji Router to <#%s>:
-
-%s
-/invite <@%s> <#%s>
-%s
-`,
-					targetChannelID,
-					"```",
-					userID,
-					targetChannelID,
-					"```",
-				)
+				return processNonMember(c, targetChannelID)
 			}
 
 			return fmt.Sprintf("We got an error from Slack trying to look up that channel: %s", apiErr.Error())
@@ -83,8 +88,13 @@ We couldn't find that channel. Try inviting Reacji Router to <#%s>:
 		return fmt.Sprintf("We got an error trying to look up that channel.")
 	}
 
-	routestore.Add(teamID, emoji, targetChannelID)
+	if !resp.Channel.IsMember {
+		return processNonMember(c, targetChannelID)
+	}
 
+	// If we've gotten here, the bot user is a member of the target channel. We
+	// can add the route and return a success message.
+	routestore.Add(teamID, emoji, targetChannelID)
 	return fmt.Sprintf("Okay, I'll send all messages with the :%s: reacji to <#%s>.", emoji, targetChannelID)
 }
 
