@@ -10,6 +10,14 @@ import (
 	"github.com/jeffomatic/reacjirouter/tokenstore"
 )
 
+func extractFormParam(r *http.Request, key string) (string, bool) {
+	param, ok := r.Form[key]
+	if !ok || len(param) != 1 {
+		return "", false
+	}
+	return param[0], true
+}
+
 // TODO: validate state param
 func handleSlackOauth(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
@@ -17,18 +25,16 @@ func handleSlackOauth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	codeParam, ok := r.Form["code"]
+	code, ok := extractFormParam(r, "code")
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-	}
-	if len(codeParam) != 1 {
-		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	resp, err := slack.NewClient("").GetAccessToken(slack.AccessTokenArgs{
 		ClientID:     config.SlackClientID,
 		ClientSecret: config.SlackClientSecret,
-		Code:         codeParam[0],
+		Code:         code,
 	})
 	if err != nil {
 		log.Println("slack oauth.access error", err)
@@ -79,29 +85,6 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 
 	case "event_callback":
 		switch e.Event.T {
-		case "message":
-			switch e.Event.ChannelType {
-			case "im":
-				appUserID, err := c.userID()
-				if err != nil {
-					log.Println("error fetching user ID:", err)
-					break
-				}
-
-				// Don't respond to messages the app itself generates
-				if e.Event.UserID == appUserID {
-					break
-				}
-
-				err = handleIM(c, e.Event.ChannelID, e.Event.UserID, e.Event.Text)
-				if err != nil {
-					log.Printf("/slack/event: error handling IM event: %s", err)
-				}
-
-			default:
-				log.Printf("/slack/event: can't handle message channel type: %s", e.Event.ChannelType)
-			}
-
 		case "reaction_added":
 			err = handleReactionAdded(c, e.Event.Reaction, e.Event.Item.ChannelID, e.Event.Item.Timestamp)
 			if err != nil {
@@ -115,4 +98,31 @@ func handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	default:
 		log.Printf("/slack/event: received unknown payload type %q", e.T)
 	}
+}
+
+func handleSlashCommand(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	teamID, ok := extractFormParam(r, "team_id")
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	text, ok := extractFormParam(r, "text")
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	message := processCommand(teamID, text)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(slack.SlashCommandResponse{
+		ResponseType: "ephemeral",
+		Text:         message,
+	})
 }

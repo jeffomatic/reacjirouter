@@ -1,5 +1,10 @@
 package slack
 
+type SlashCommandResponse struct {
+	ResponseType string `json:"response_type"`
+	Text         string `json:"text"`
+}
+
 type Event struct {
 	ID          string `json:"event_id"`
 	T           string `json:"type"`
