@@ -23,7 +23,6 @@ func init() {
 func handleIM(c *teamClient, channelID, userID, text string) error {
 	text = strings.TrimSpace(text)
 	tokens := spaceSplitter.Split(text, 3)
-	var err error
 
 	switch strings.ToLower(tokens[0]) {
 	case "add":
@@ -36,7 +35,7 @@ func handleIM(c *teamClient, channelID, userID, text string) error {
 		return handleHelpCommand(c, channelID, userID, tokens)
 
 	default:
-		err = c.sendEphemeralMessage(userID, channelID, "Sorry, I didn't recognize that command! Type \"help\" for instructions.")
+		err := c.sendEphemeralMessage(userID, channelID, "Sorry, I didn't recognize that command! Type \"help\" for instructions.")
 		if err != nil {
 			return err
 		}
