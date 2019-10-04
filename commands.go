@@ -56,7 +56,25 @@ func processAddCommand(teamID string, tokens []string) string {
 	if err != nil {
 		if apiErr := slack.GetAPIError(err); apiErr != nil {
 			if apiErr.Error() == "channel_not_found" {
-				return fmt.Sprintf("We couldn't find that channel. Try inviting Reacji Router to <#%s>", targetChannelID)
+				userID, err := c.userID()
+				if err != nil {
+					log.Println("error looking up ID:", err)
+					return fmt.Sprintf("We got an error trying to look up that channel.")
+				}
+
+				return fmt.Sprintf(`
+We couldn't find that channel. Try inviting Reacji Router to <#%s>:
+
+%s
+/invite <@%s> <#%s>
+%s
+`,
+					targetChannelID,
+					"```",
+					userID,
+					targetChannelID,
+					"```",
+				)
 			}
 
 			return fmt.Sprintf("We got an error from Slack trying to look up that channel: %s", apiErr.Error())

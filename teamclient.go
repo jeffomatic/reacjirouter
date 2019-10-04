@@ -22,17 +22,35 @@ func newTeamClient(teamID string) *teamClient {
 	return &teamClient{Client: slack.NewClient(token), teamID: teamID}
 }
 
-func (c *teamClient) teamURL() (string, error) {
+func (c *teamClient) ensureAuthTestCache() error {
 	if c.authTestCache != nil {
-		return c.authTestCache.URL, nil
+		return nil
 	}
 
-	var resp slack.AuthTestResponse
-	err := c.Client.Call("auth.test", nil, &resp)
+	resp := new(slack.AuthTestResponse)
+	err := c.Client.Call("auth.test", nil, resp)
+	if err != nil {
+		return err
+	}
+
+	c.authTestCache = resp
+	return nil
+}
+
+func (c *teamClient) teamURL() (string, error) {
+	err := c.ensureAuthTestCache()
 	if err != nil {
 		return "", err
 	}
 
-	c.authTestCache = &resp
 	return c.authTestCache.URL, nil
+}
+
+func (c *teamClient) userID() (string, error) {
+	err := c.ensureAuthTestCache()
+	if err != nil {
+		return "", err
+	}
+
+	return c.authTestCache.UserID, nil
 }
