@@ -18,6 +18,20 @@ type Client struct {
 	AccessToken string
 }
 
+type APIError string
+
+func (e APIError) Error() string {
+	return string(e)
+}
+
+func GetAPIError(err error) *APIError {
+	if apiErr, ok := err.(APIError); ok {
+		return &apiErr
+	}
+
+	return nil
+}
+
 func NewClient(token string) *Client {
 	return &Client{URLPrefix: defaultURLPrefix, AccessToken: token}
 }
@@ -35,14 +49,14 @@ func handleJSONResponse(resp *http.Response, respBody interface{}) error {
 
 	errCheck := struct {
 		Ok    bool
-		Error string
+		Error APIError
 	}{}
 	err = json.Unmarshal(respBytes, &errCheck)
 	if err != nil {
 		return errors.Wrap(err, "response body error-check decode")
 	}
 	if !errCheck.Ok {
-		return fmt.Errorf("Slack API error: %s", errCheck.Error)
+		return errCheck.Error
 	}
 
 	if respBody != nil {
