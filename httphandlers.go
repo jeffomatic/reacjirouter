@@ -61,11 +61,13 @@ func handleSlackOauth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := slack.NewClient("").GetAccessToken(slack.AccessTokenArgs{
-		ClientID:     config.SlackClientID,
-		ClientSecret: config.SlackClientSecret,
-		Code:         code,
-	})
+	var resp slack.OauthAccessResponse
+	err = slack.NewClient("").Call(slack.OauthAccess, slack.OauthAccessRequest{
+		AuthorizationType: "grant",
+		ClientID:          config.SlackClientID,
+		ClientSecret:      config.SlackClientSecret,
+		Code:              code,
+	}, &resp)
 	if err != nil {
 		log.Println("slack oauth.access error", err)
 		w.WriteHeader(http.StatusInternalServerError)

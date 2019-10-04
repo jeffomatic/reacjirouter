@@ -28,7 +28,7 @@ func (c *teamClient) ensureAuthTestCache() error {
 	}
 
 	resp := new(slack.AuthTestResponse)
-	err := c.Client.Call("auth.test", nil, resp)
+	err := c.Client.Call(slack.AuthTest, nil, resp)
 	if err != nil {
 		return err
 	}

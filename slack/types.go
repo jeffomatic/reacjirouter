@@ -58,10 +58,13 @@ type ConversationsInfoResponse struct {
 	} `json:"channel"`
 }
 
-type AccessTokenArgs struct {
-	ClientID     string
-	ClientSecret string
-	Code         string
+// Technically, we form-encode this, but we overload the JSON struct tags to
+// for a serialization format.
+type OauthAccessRequest struct {
+	AuthorizationType string `json:"authorization_type"`
+	ClientID          string `json:"client_id"`
+	ClientSecret      string `json:"client_secret"`
+	Code              string `json:"code"`
 }
 
 type OauthAccessResponse struct {

@@ -18,7 +18,7 @@ func handleReactionAdded(c *teamClient, emoji string, channelID string, timestam
 
 	text := slack.MessageLink{teamURL, channelID, timestamp}.String()
 	return c.Client.Call(
-		"chat.postMessage",
+		slack.ChatPostMessage,
 		slack.ChatPostMessageRequest{targetChannel, text, true},
 		nil,
 	)

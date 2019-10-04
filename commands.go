@@ -51,8 +51,7 @@ func processAddCommand(teamID string, tokens []string) string {
 	}
 
 	c := newTeamClient(teamID)
-	var resp slack.ConversationsInfoResponse
-	err := c.Client.Call("conversations.info", slack.ConversationsInfoRequest{ChannelID: targetChannelID}, &resp)
+	err := c.Call(slack.ConversationsInfo, slack.ConversationsInfoRequest{ChannelID: targetChannelID}, nil)
 	if err != nil {
 		if apiErr := slack.GetAPIError(err); apiErr != nil {
 			if apiErr.Error() == "channel_not_found" {

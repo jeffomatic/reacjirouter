@@ -36,7 +36,60 @@ func NewClient(token string) *Client {
 	return &Client{URLPrefix: defaultURLPrefix, AccessToken: token}
 }
 
-func handleJSONResponse(resp *http.Response, respBody interface{}) error {
+func (c *Client) Call(method Method, body interface{}, returnData interface{}) error {
+	methodInfo := infoByMethod[method]
+
+	reqBody := []byte{}
+	var err error
+
+	if body != nil {
+		reqBody, err = json.Marshal(body)
+		if err != nil {
+			return errors.Wrap(err, "json encode request body")
+		}
+
+		if methodInfo.formEncodedRequest {
+			// We use JSON struct tagging for serialization. It's not great but better
+			// than inventing a new tagging system just for form-encoded variables.
+			var params map[string]string
+			err = json.Unmarshal(reqBody, &params)
+			if err != nil {
+				return errors.Wrap(err, "invalid request body")
+			}
+
+			formVars := make(url.Values)
+			for k, v := range params {
+				formVars[k] = []string{v}
+			}
+
+			reqBody = []byte(formVars.Encode())
+		}
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		c.URLPrefix+"/"+string(method),
+		bytes.NewReader(reqBody),
+	)
+	if err != nil {
+		return errors.Wrap(err, "HTTP request creation")
+	}
+
+	if methodInfo.formEncodedRequest {
+		req.Header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
+	} else {
+		req.Header["Content-Type"] = []string{"application/json"}
+	}
+
+	if !methodInfo.noAccessToken {
+		req.Header["Authorization"] = []string{"Bearer " + c.AccessToken}
+	}
+
+	resp, err := new(http.Client).Do(req)
+	if err != nil {
+		return errors.Wrap(err, "executing HTTP request")
+	}
+
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad status: %s", resp.Status)
 	}
@@ -59,56 +112,12 @@ func handleJSONResponse(resp *http.Response, respBody interface{}) error {
 		return errCheck.Error
 	}
 
-	if respBody != nil {
-		err = json.Unmarshal(respBytes, respBody)
+	if returnData != nil {
+		err = json.Unmarshal(respBytes, returnData)
 		if err != nil {
 			return errors.Wrap(err, "response body unmarshal")
 		}
 	}
 
 	return nil
-}
-
-func (c *Client) Call(method string, body interface{}, respBody interface{}) error {
-	reqBody := []byte(`{}`)
-	var err error
-
-	if body != nil {
-		reqBody, err = json.Marshal(body)
-		if err != nil {
-			return errors.Wrap(err, "json encode request body")
-		}
-	}
-
-	req, err := http.NewRequest(
-		http.MethodPost,
-		c.URLPrefix+"/"+method,
-		bytes.NewReader(reqBody),
-	)
-	if err != nil {
-		return errors.Wrap(err, "HTTP request creation")
-	}
-
-	req.Header["Content-Type"] = []string{"application/json"}
-	req.Header["Authorization"] = []string{"Bearer " + c.AccessToken}
-
-	resp, err := new(http.Client).Do(req)
-	if err != nil {
-		return errors.Wrap(err, "executing HTTP request")
-	}
-
-	return handleJSONResponse(resp, respBody)
-}
-
-func (c *Client) GetAccessToken(args AccessTokenArgs) (OauthAccessResponse, error) {
-	resp, err := new(http.Client).PostForm(c.URLPrefix+"/oauth.access", url.Values{
-		"authorization_type": []string{"grant"},
-		"client_id":          []string{args.ClientID},
-		"client_secret":      []string{args.ClientSecret},
-		"code":               []string{args.Code},
-	})
-
-	var respBody OauthAccessResponse
-	err = handleJSONResponse(resp, &respBody)
-	return respBody, err
 }
